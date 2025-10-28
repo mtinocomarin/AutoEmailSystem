@@ -1,0 +1,36 @@
+name: Daily Love Note
+on:
+  schedule:
+    - cron: "0 16 * * *"   # 9:00 AM PDT (UTC-7)
+    - cron: "0 17 * * *"   # 9:00 AM PST (UTC-8)
+  workflow_dispatch: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/Los_Angeles
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PERSONAL_EMAIL: ${{ secrets.PERSONAL_EMAIL }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      RECIPIENT: ${{ secrets.RECIPIENT || secrets.PERSONAL_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure 9–10 AM PT, add random delay
+        shell: bash
+        run: |
+          h=$(date +%H); m=$(date +%M)
+          if [ "$h" -ne 09 ]; then
+            echo "Not in 9 AM hour PT (now ${h}:${m}). Exiting."
+            exit 0
+          fi
+          delay=$(( RANDOM % 3600 ))
+          echo "Sleeping $delay seconds to land between 9:00–10:00 AM PT..."
+          sleep "$delay"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          python -m pip install --upgrade pip
+          pip install huggingface_hub
+      - run: python main.py
+
